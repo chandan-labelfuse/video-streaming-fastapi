@@ -1,0 +1,41 @@
+
+name: "yolov4"
+platform: "tensorrt_plan"
+version_policy {
+  latest {
+    num_versions: 1
+  }
+}
+max_batch_size: 1
+input {
+  name: "input"
+  data_type: TYPE_FP32
+  dims: 3
+  dims: 608
+  dims: 608
+}
+output {
+  name: "detections"
+  data_type: TYPE_FP32
+  dims: 159201
+  dims: 1
+  dims: 1
+}
+dynamic_batching { }
+instance_group {
+  name: "yolov4"
+  count: 1
+  gpus: 0
+  kind: KIND_GPU
+}
+default_model_filename: "model.plan"
+optimization {
+  input_pinned_memory {
+    enable: true
+  }
+  output_pinned_memory {
+    enable: true
+  }
+}
+
+backend: "tensorrt"
