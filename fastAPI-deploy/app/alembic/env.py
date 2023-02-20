@@ -29,9 +29,8 @@ if config.config_file_name is not None:
 
 
 from db import models
-from db.db import metadata
 
-target_metadata = metadata
+target_metadata = models.Base.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
