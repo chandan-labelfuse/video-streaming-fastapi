@@ -27,6 +27,8 @@ from utils.utils import CamStreamTriton, find_camera, gen_frames_threading_yolov
 from core.auth import authenticate, create_access_token
 from core.deps import get_current_user
 
+#from db import utils
+
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
 @app.get("/", response_class=HTMLResponse)
@@ -48,7 +50,6 @@ async def login(data: OAuth2PasswordRequestForm = Depends(), db: Session = Depen
     try:
         user = await authenticate(data.username, data.password, db)
         if not user:
-            print ("Exception")
             raise HTTPException(status_code=400, detail="Incorrect username or password")
 
         token = jsonable_encoder(create_access_token(sub=user.email))
@@ -69,7 +70,6 @@ async def login(data: OAuth2PasswordRequestForm = Depends(), db: Session = Depen
 @app.get("/me")
 def read_users_me(current_user: User = Depends(get_current_user)):
     user = current_user
-    print (user.email)
 
 ## Create account
 @app.get("/create", response_class=HTMLResponse)
