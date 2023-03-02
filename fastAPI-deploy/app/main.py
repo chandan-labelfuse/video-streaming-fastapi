@@ -27,7 +27,7 @@ from utils.utils import CamStreamTriton, find_camera, gen_frames_threading_yolov
 from core.auth import authenticate, create_access_token
 from core.deps import get_current_user
 
-#from db import utils
+from components.comp import CVCam, CVRender
 
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
@@ -98,57 +98,49 @@ async def page(request: Request, page_name: str):
     )
 
 
-@app.get("/form", response_class=HTMLResponse)
-async def get_form(request: Request):
-    return templates.TemplateResponse("form.html", context={"request": request})
-
-
-@app.post("/form")
-async def post_form(request: Request, vid: str = Form(...)):
-    video_id = await ModelVideo.create(video=vid)
-    data = {"vid_str": video_id}
-    return templates.TemplateResponse(
-        "form_post.html", context={"request": request, "data": data}
-    )
-
-
-@app.get("/delete_table")
-async def delete_table():
-    delete = await ModelVideo.delete_all()
-    result = await ModelVideo.get_all()
-    data = {"response": len(result), "delete": delete}
-    return data
-
-
-
-
 ### Dashboard functions and routes
+@app.get("/demo", response_class=HTMLResponse)
+async def demo(request: Request):
+    return templates.TemplateResponse("demo.html", context={"request": request})
 
+@app.get("/demo/camera")
+async def demo_feed():
+    cam = CVCam(1, "rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mp4")
+    render = CVRender(cam)
 
-@app.get("/dashboard", response_class=HTMLResponse)
-async def dashboard(request: Request):
-    db_camera_list = await ModelVideo.get_all()
-    camera_list = get_camera_list(db_camera_list)
-    cam_id_list = list(range(0, len(camera_list)))
-    context = {"request": request, "data": cam_id_list}
-    return templates.TemplateResponse("dashboard.html", context=context)
+    cam.initialize()
+    cam.start()
 
-
-@app.get("/dashboard/{video_id}")
-async def video_feed(video_id: int):
-    db_camera_list = await ModelVideo.get_all()
-    cam = find_camera(video_id, db_camera_list)
-
-    ## non threaded stream
-    # return StreamingResponse(gen_frames(cam), media_type="multipart/x-mixed-replace;boundary=frame")
-
-    ## threaded stream Triton
-    cs = CamStreamTriton(src=cam, url=os.environ["INFERENCE_GRPC_URL"])
-    cs.start()
     return StreamingResponse(
-        gen_frames_threading_yolov4(cs),
+        render.render(),
         media_type="multipart/x-mixed-replace;boundary=frame",
     )
+
+
+# @app.get("/dashboard", response_class=HTMLResponse)
+# async def dashboard(request: Request):
+#     db_camera_list = await ModelVideo.get_all()
+#     camera_list = get_camera_list(db_camera_list)
+#     cam_id_list = list(range(0, len(camera_list)))
+#     context = {"request": request, "data": cam_id_list}
+#     return templates.TemplateResponse("dashboard.html", context=context)
+
+
+# @app.get("/dashboard/{video_id}")
+# async def video_feed(video_id: int):
+#     db_camera_list = await ModelVideo.get_all()
+#     cam = find_camera(video_id, db_camera_list)
+
+#     ## non threaded stream
+#     # return StreamingResponse(gen_frames(cam), media_type="multipart/x-mixed-replace;boundary=frame")
+
+#     ## threaded stream Triton
+#     cs = CamStreamTriton(src=cam, url=os.environ["INFERENCE_GRPC_URL"])
+#     cs.start()
+#     return StreamingResponse(
+#         gen_frames_threading_yolov4(cs),
+#         media_type="multipart/x-mixed-replace;boundary=frame",
+#     )
 
 
 # if __name__ == "__main__":
